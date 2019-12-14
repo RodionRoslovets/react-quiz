@@ -5,7 +5,8 @@ import FinishedQuiz from '../../components/FinishedQuiz/FinishedQuiz';
 
 class Quiz extends React.Component {
     state = {
-        isFinished: true,
+        results:{},
+        isFinished: false,
         activeQuestion:0,
         answerState:null,
         quiz:[
@@ -34,61 +35,73 @@ class Quiz extends React.Component {
         ]
     }
 
-    onAnswerClickHandler = (answerId) =>{
-        console.log(answerId);
+   onAnswerClickHandler = answerId => {
+    if (this.state.answerState) {
+      const key = Object.keys(this.state.answerState)[0]
+      if (this.state.answerState[key] === 'success') {
+        return
+      }
+    }
 
-        if(this.state.answerState){
-            const key = Object.keys(this.state.answerState)[0];
+    const question = this.state.quiz[this.state.activeQuestion]
+    const results = this.state.results
 
-            if(this.state.answerState[key] === "sucsess" ){
-                return
-            }
-        }
+    if (question.rightAnswerId === answerId) {
+      if (!results[question.id]) {
+        results[question.id] = 'sucsess'
+      }
 
-        const question = this.state.quiz[this.state.activeQuestion];
+      this.setState({
+        answerState: {[answerId]: 'sucsess'},
+        results
+      })
 
-        if(question.rightAnswerId === answerId){
-
-            this.setState({
-                answerState: { [answerId]: 'sucsess' }
-            })
-
-            const timeout = window.setTimeout(()=>{
-                if(this.isQuizFinished()){
-                    this.setState({
-                        isFinished:true
-                    })
-                } else {
-                    this.setState({
-                        activeQuestion: this.state.activeQuestion + 1,
-                        answerState:null
-                    });
-                }
-
-                window.clearTimeout(timeout);
-
-            }, 1000);            
+      const timeout = window.setTimeout(() => {
+        if (this.isQuizFinished()) {
+          this.setState({
+            isFinished: true
+          })
         } else {
-            this.setState({
-                answerState: { [answerId]: 'error' }
-            })
-        }       
+          this.setState({
+            activeQuestion: this.state.activeQuestion + 1,
+            answerState: null
+          })
+        }
+        window.clearTimeout(timeout)
+      }, 1000)
+    } else {
+      results[question.id] = 'error'
+      this.setState({
+        answerState: {[answerId]: 'error'},
+        results
+      })
     }
+  }
 
-    isQuizFinished(){
-        return this.state.activeQuestion + 1 === this.state.quiz.length
-    }
+  isQuizFinished() {
+    return this.state.activeQuestion + 1 === this.state.quiz.length
+  }
+
+  retryHandler=()=>{
+      this.setState({
+        activeQuestion:0,
+        answerState:null,
+        results:{},
+        isFinished: false
+      })
+  }
 
     render(){
         return(
             <div className="Quiz">
                 <div className="Quiz-Wrapper">
                     <h1>Ответьте на вопросы</h1>
-
                     {
                         this.state.isFinished ? 
                             <FinishedQuiz
-
+                                results = {this.state.results}
+                                quiz={this.state.quiz}
+                                onRetry={this.retryHandler}
                             ></FinishedQuiz> :                     
                             <ActiveQuiz 
                                 question={this.state.quiz[this.state.activeQuestion].question}
@@ -97,7 +110,7 @@ class Quiz extends React.Component {
                                 quizLength={ this.state.quiz.length }
                                 answerNumber={this.state.activeQuestion + 1}
                                 state={this.state.answerState}
-                            >                        
+                            >                    
                             </ActiveQuiz>
                     }
                 </div>
